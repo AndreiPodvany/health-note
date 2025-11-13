@@ -585,24 +585,6 @@
         .fade-in {
             animation: fadeIn 0.3s ease-in;
         }
-        
-        /* Улучшения для скролла */
-        ::-webkit-scrollbar {
-            width: 8px;
-        }
-        
-        ::-webkit-scrollbar-track {
-            background: #f1f1f1;
-        }
-        
-        ::-webkit-scrollbar-thumb {
-            background: #c1c1c1;
-            border-radius: 4px;
-        }
-        
-        ::-webkit-scrollbar-thumb:hover {
-            background: #a8a8a8;
-        }
     </style>
 </head>
 <body>
@@ -611,11 +593,14 @@
         <div class="tabs">
             <button class="tab active" data-tab="pressure">Давление</button>
             <button class="tab" data-tab="glucose">Глюкоза в крови</button>
+            <button class="tab" data-tab="combined">Объединенные данные</button>
             <button class="tab" data-tab="stats">Статистика</button>
         </div>
         <div class="data-management">
-            <button class="data-btn" id="export-btn">Экспорт данных</button>
-            <button class="data-btn" id="import-btn">Импорт данных</button>
+            <button class="data-btn" id="export-btn">Экспорт данных (JSON)</button>
+            <button class="data-btn" id="import-btn">Импорт данных (JSON)</button>
+            <button class="data-btn" id="export-text-btn">Экспорт в текст</button>
+            <button class="data-btn" id="import-text-btn">Импорт из текста</button>
         </div>
     </header>
 
@@ -662,7 +647,7 @@
                 <button class="filter-btn" data-stats-type="pressure" data-filter="night">Ночь</button>
             </div>
             <div class="stats-container" id="pressure-stats">
-                <!-- Статистика будет заполнена динамически -->
+                <div class="empty-state">Нет данных для отображения</div>
             </div>
         </div>
 
@@ -718,7 +703,9 @@
                     </select>
                 </div>
             </div>
-            <div id="pressure-records"></div>
+            <div id="pressure-records">
+                <div class="empty-state">Записей не найдено</div>
+            </div>
             <div class="pagination" id="pressure-pagination"></div>
         </div>
     </div>
@@ -730,7 +717,8 @@
             <form id="glucose-form">
                 <div class="form-group">
                     <label for="glucose-value">Уровень глюкозы (ммоль/л)</label>
-                    <input type="number" id="glucose-value" step="0.1" required min="1" max="30">
+                    <input type="text" id="glucose-value" pattern="[0-9]+([\.,][0-9]+)?" required title="Введите число, например: 5.6 или 5,6" placeholder="5.6 или 5,6">
+                    <small style="color: #7f8c8d; font-size: 12px;">Можно вводить как через точку, так и через запятую</small>
                 </div>
                 <div class="form-group">
                     <label for="glucose-date">Дата</label>
@@ -775,7 +763,7 @@
                 <button class="filter-btn" data-stats-type="glucose" data-filter="night">Ночь</button>
             </div>
             <div class="stats-container" id="glucose-stats">
-                <!-- Статистика будет заполнена динамически -->
+                <div class="empty-state">Нет данных для отображения</div>
             </div>
         </div>
 
@@ -812,8 +800,104 @@
                     </select>
                 </div>
             </div>
-            <div id="glucose-records"></div>
+            <div id="glucose-records">
+                <div class="empty-state">Записей не найдено</div>
+            </div>
             <div class="pagination" id="glucose-pagination"></div>
+        </div>
+    </div>
+
+    <!-- Вкладка объединенных данных -->
+    <div id="combined" class="tab-content">
+        <div class="input-section fade-in">
+            <h2>Добавить объединенное измерение</h2>
+            <form id="combined-form">
+                <div class="form-group">
+                    <label for="combined-date">Дата</label>
+                    <input type="date" id="combined-date" required>
+                </div>
+                <div class="form-group">
+                    <label for="combined-time">Время</label>
+                    <input type="time" id="combined-time" required>
+                </div>
+                <div class="form-group">
+                    <label for="combined-systolic">Систолическое давление (верхнее)</label>
+                    <input type="number" id="combined-systolic" min="50" max="250" placeholder="Оставьте пустым, если нет данных">
+                </div>
+                <div class="form-group">
+                    <label for="combined-diastolic">Диастолическое давление (нижнее)</label>
+                    <input type="number" id="combined-diastolic" min="30" max="150" placeholder="Оставьте пустым, если нет данных">
+                </div>
+                <div class="form-group">
+                    <label for="combined-pulse">Пульс</label>
+                    <input type="number" id="combined-pulse" min="30" max="200" placeholder="Оставьте пустым, если нет данных">
+                </div>
+                <div class="form-group">
+                    <label for="combined-glucose">Уровень глюкозы (ммоль/л)</label>
+                    <input type="text" id="combined-glucose" pattern="[0-9]+([\.,][0-9]+)?" title="Введите число, например: 5.6 или 5,6" placeholder="5.6 или 5,6 (оставьте пустым, если нет данных)">
+                </div>
+                <div class="form-group">
+                    <label>Состояние приема пищи</label>
+                    <div class="meal-status">
+                        <div class="meal-options">
+                            <div class="meal-option">
+                                <button type="button" class="meal-btn active" data-meal-status="none">Не ел ближайшее время</button>
+                            </div>
+                            <div class="meal-option">
+                                <button type="button" class="meal-btn" data-meal-status="30min">Ел в течение получаса</button>
+                            </div>
+                            <div class="meal-option">
+                                <button type="button" class="meal-btn" data-meal-status="1hour">Ел в течение часа</button>
+                            </div>
+                        </div>
+                        <input type="hidden" id="combined-meal-status" name="combined-meal-status" value="none">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="combined-comment">Комментарий</label>
+                    <textarea id="combined-comment" rows="3" placeholder="Комментарий к измерению..."></textarea>
+                </div>
+                <button type="submit">Сохранить измерение</button>
+            </form>
+        </div>
+
+        <div class="stats-section fade-in">
+            <h2>Статистика объединенных данных</h2>
+            <div class="stats-container" id="combined-stats">
+                <div class="empty-state">Нет данных для отображения</div>
+            </div>
+        </div>
+
+        <div class="charts-container">
+            <div class="chart-wrapper fade-in">
+                <div class="chart-header">
+                    <div class="chart-title">Объединенный график</div>
+                    <div class="chart-controls">
+                        <div class="chart-actions">
+                            <button class="control-btn" data-chart="combined" data-action="fullscreen">⛶</button>
+                            <button class="control-btn" data-chart="combined" data-action="reset-zoom">⟲</button>
+                        </div>
+                    </div>
+                </div>
+                <canvas id="combined-chart"></canvas>
+            </div>
+        </div>
+
+        <div class="records-section fade-in">
+            <div class="records-header">
+                <h2>История объединенных измерений</h2>
+                <div class="records-controls">
+                    <input type="text" class="search-box" id="combined-search" placeholder="Поиск...">
+                    <select id="combined-sort">
+                        <option value="newest">Сначала новые</option>
+                        <option value="oldest">Сначала старые</option>
+                    </select>
+                </div>
+            </div>
+            <div id="combined-records">
+                <div class="empty-state">Записей не найдено</div>
+            </div>
+            <div class="pagination" id="combined-pagination"></div>
         </div>
     </div>
 
@@ -829,7 +913,7 @@
                 <button class="filter-btn" data-stats-type="overall" data-filter="night">Ночь</button>
             </div>
             <div class="stats-container" id="overall-stats">
-                <!-- Общая статистика будет заполнена динамически -->
+                <div class="empty-state">Нет данных для отображения</div>
             </div>
         </div>
 
@@ -849,7 +933,7 @@
         </div>
     </div>
 
-    <!-- Модальное окно для редактирования -->
+    <!-- Модальные окна -->
     <div id="edit-modal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
@@ -866,11 +950,10 @@
         </div>
     </div>
 
-    <!-- Модальное окно для импорта -->
     <div id="import-modal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h2>Импорт данных</h2>
+                <h2>Импорт данных (JSON)</h2>
                 <button class="close-btn" id="close-import">&times;</button>
             </div>
             <div class="form-group">
@@ -880,7 +963,7 @@
             <div class="import-options">
                 <div class="import-option">
                     <input type="radio" id="import-replace" name="import-type" value="replace" checked>
-                    <label for="import-replace">Заменить текущие данные (с предупреждением)</label>
+                    <label for="import-replace">Заменить текущие данные</label>
                 </div>
                 <div class="import-option">
                     <input type="radio" id="import-merge" name="import-type" value="merge">
@@ -894,7 +977,50 @@
         </div>
     </div>
 
-    <!-- Модальное окно для полноэкранного просмотра графика -->
+    <div id="import-text-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Импорт данных из текста</h2>
+                <button class="close-btn" id="close-import-text">&times;</button>
+            </div>
+            <div class="form-group">
+                <label for="import-text">Введите данные:</label>
+                <textarea id="import-text" rows="10" placeholder="Вставьте данные в текстовом формате..."></textarea>
+            </div>
+            <div class="import-options">
+                <div class="import-option">
+                    <input type="radio" id="import-text-replace" name="import-text-type" value="replace" checked>
+                    <label for="import-text-replace">Заменить текущие данные</label>
+                </div>
+                <div class="import-option">
+                    <input type="radio" id="import-text-merge" name="import-text-type" value="merge">
+                    <label for="import-text-merge">Объединить с текущими данными</label>
+                </div>
+            </div>
+            <div class="modal-buttons">
+                <button type="button" class="cancel-btn" id="cancel-import-text">Отмена</button>
+                <button type="button" id="confirm-import-text">Импортировать</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="export-text-modal" class="modal">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h2>Экспорт данных в текст</h2>
+                <button class="close-btn" id="close-export-text">&times;</button>
+            </div>
+            <div class="form-group">
+                <label for="export-text">Данные для экспорта:</label>
+                <textarea id="export-text" rows="15" readonly></textarea>
+            </div>
+            <div class="modal-buttons">
+                <button type="button" class="cancel-btn" id="close-export-text-btn">Закрыть</button>
+                <button type="button" id="copy-export-text">Копировать в буфер</button>
+            </div>
+        </div>
+    </div>
+
     <div id="fullscreen-modal" class="modal">
         <div class="modal-content modal-large">
             <div class="modal-header">
@@ -906,259 +1032,144 @@
     </div>
 
     <script>
-        // Регистрируем плагин zoom для Chart.js
-        Chart.register(ChartZoom);
-
-        // Классы для хранения данных
-        class PressureRecord {
-            constructor(systolic, diastolic, pulse, date, time, comment, id = null) {
-                this.id = id || Date.now().toString();
-                this.systolic = parseInt(systolic);
-                this.diastolic = parseInt(diastolic);
-                this.pulse = parseInt(pulse);
-                this.date = date;
-                this.time = time;
-                this.comment = comment;
-                this.timestamp = new Date(`${date}T${time}`).getTime();
-                this.type = 'pressure';
-            }
-        }
-
-        class GlucoseRecord {
-            constructor(value, date, time, mealStatus, comment, id = null) {
-                this.id = id || Date.now().toString();
-                this.value = parseFloat(value);
-                this.date = date;
-                this.time = time;
-                this.mealStatus = mealStatus;
-                this.comment = comment;
-                this.timestamp = new Date(`${date}T${time}`).getTime();
-                this.type = 'glucose';
-            }
-        }
-
-        // Управление данными
+        // Простой и надежный менеджер данных
         class HealthDataManager {
             constructor() {
-                this.pressureRecords = this.loadData('pressureRecords') || [];
-                this.glucoseRecords = this.loadData('glucoseRecords') || [];
-                this.editingRecord = null;
-                this.editingType = null;
-                this.chartFilters = {
-                    pulse: 'all',
-                    pressure: 'all',
-                    glucose: 'all',
-                    overview: 'all'
-                };
-                this.statsFilters = {
-                    pressure: 'all',
-                    glucose: 'all',
-                    overall: 'all'
-                };
+                this.pressureRecords = JSON.parse(localStorage.getItem('pressureRecords')) || [];
+                this.glucoseRecords = JSON.parse(localStorage.getItem('glucoseRecords')) || [];
+                this.charts = {};
+                this.init();
+            }
+
+            init() {
+                this.setDefaultDateTime();
+                this.setupEventListeners();
+                this.updateAllDisplays();
+            }
+
+            setDefaultDateTime() {
+                const now = new Date();
+                const today = now.toISOString().split('T')[0];
+                const time = now.toTimeString().slice(0, 5);
                 
-                // Инициализация графиков
-                this.charts = {
-                    pulse: null,
-                    pressure: null,
-                    glucose: null,
-                    overview: null,
-                    fullscreen: null
-                };
-            }
-
-            loadData(key) {
-                try {
-                    const data = localStorage.getItem(key);
-                    return data ? JSON.parse(data) : [];
-                } catch (e) {
-                    console.error('Ошибка загрузки данных:', e);
-                    return [];
-                }
-            }
-
-            saveData(key, data) {
-                try {
-                    localStorage.setItem(key, JSON.stringify(data));
-                    return true;
-                } catch (e) {
-                    console.error('Ошибка сохранения данных:', e);
-                    return false;
-                }
-            }
-
-            addPressureRecord(record) {
-                this.pressureRecords.push(record);
-                this.saveData('pressureRecords', this.pressureRecords);
-                this.updateCharts();
-                this.updateStats();
-                this.renderPressureRecords();
-                return true;
-            }
-
-            addGlucoseRecord(record) {
-                this.glucoseRecords.push(record);
-                this.saveData('glucoseRecords', this.glucoseRecords);
-                this.updateCharts();
-                this.updateStats();
-                this.renderGlucoseRecords();
-                return true;
-            }
-
-            updatePressureRecord(id, updatedRecord) {
-                const index = this.pressureRecords.findIndex(record => record.id === id);
-                if (index !== -1) {
-                    this.pressureRecords[index] = updatedRecord;
-                    this.saveData('pressureRecords', this.pressureRecords);
-                    this.updateCharts();
-                    this.updateStats();
-                    this.renderPressureRecords();
-                    return true;
-                }
-                return false;
-            }
-
-            updateGlucoseRecord(id, updatedRecord) {
-                const index = this.glucoseRecords.findIndex(record => record.id === id);
-                if (index !== -1) {
-                    this.glucoseRecords[index] = updatedRecord;
-                    this.saveData('glucoseRecords', this.glucoseRecords);
-                    this.updateCharts();
-                    this.updateStats();
-                    this.renderGlucoseRecords();
-                    return true;
-                }
-                return false;
-            }
-
-            deletePressureRecord(id) {
-                const initialLength = this.pressureRecords.length;
-                this.pressureRecords = this.pressureRecords.filter(record => record.id !== id);
-                if (this.pressureRecords.length < initialLength) {
-                    this.saveData('pressureRecords', this.pressureRecords);
-                    this.updateCharts();
-                    this.updateStats();
-                    this.renderPressureRecords();
-                    return true;
-                }
-                return false;
-            }
-
-            deleteGlucoseRecord(id) {
-                const initialLength = this.glucoseRecords.length;
-                this.glucoseRecords = this.glucoseRecords.filter(record => record.id !== id);
-                if (this.glucoseRecords.length < initialLength) {
-                    this.saveData('glucoseRecords', this.glucoseRecords);
-                    this.updateCharts();
-                    this.updateStats();
-                    this.renderGlucoseRecords();
-                    return true;
-                }
-                return false;
-            }
-
-            // Форматирование даты в день-месяц-год
-            formatDate(dateString) {
-                const date = new Date(dateString);
-                const day = date.getDate().toString().padStart(2, '0');
-                const month = (date.getMonth() + 1).toString().padStart(2, '0');
-                const year = date.getFullYear();
-                return `${day}-${month}-${year}`;
-            }
-
-            // Определение времени суток по времени
-            getTimeOfDay(timeString) {
-                const hour = parseInt(timeString.split(':')[0]);
-                if (hour >= 6 && hour < 11) return 'morning';
-                if (hour >= 11 && hour < 17) return 'day';
-                if (hour >= 17 && hour < 24) return 'evening';
-                return 'night';
-            }
-
-            // Фильтрация данных по времени суток
-            filterDataByTime(data, timeFilter) {
-                if (timeFilter === 'all') return data;
-                return data.filter(item => {
-                    const timeOfDay = this.getTimeOfDay(item.time);
-                    return timeOfDay === timeFilter;
+                ['pressure', 'glucose', 'combined'].forEach(type => {
+                    const dateEl = document.getElementById(`${type}-date`);
+                    const timeEl = document.getElementById(`${type}-time`);
+                    if (dateEl) dateEl.value = today;
+                    if (timeEl) timeEl.value = time;
                 });
             }
 
-            // Расчет статистики
-            calculateStats(records, type) {
-                if (records.length === 0) {
-                    return {
-                        count: 0,
-                        avg: 0,
-                        min: 0,
-                        max: 0,
-                        last: 0
-                    };
-                }
-                
-                if (type === 'pressure') {
-                    const systolicValues = records.map(r => r.systolic);
-                    const diastolicValues = records.map(r => r.diastolic);
-                    const pulseValues = records.map(r => r.pulse);
-                    
-                    return {
-                        count: records.length,
-                        systolic: {
-                            avg: Math.round(systolicValues.reduce((a, b) => a + b, 0) / systolicValues.length),
-                            min: Math.min(...systolicValues),
-                            max: Math.max(...systolicValues),
-                            last: systolicValues[systolicValues.length - 1]
-                        },
-                        diastolic: {
-                            avg: Math.round(diastolicValues.reduce((a, b) => a + b, 0) / diastolicValues.length),
-                            min: Math.min(...diastolicValues),
-                            max: Math.max(...diastolicValues),
-                            last: diastolicValues[diastolicValues.length - 1]
-                        },
-                        pulse: {
-                            avg: Math.round(pulseValues.reduce((a, b) => a + b, 0) / pulseValues.length),
-                            min: Math.min(...pulseValues),
-                            max: Math.max(...pulseValues),
-                            last: pulseValues[pulseValues.length - 1]
-                        }
-                    };
-                } else if (type === 'glucose') {
-                    const values = records.map(r => r.value);
-                    
-                    return {
-                        count: records.length,
-                        avg: parseFloat((values.reduce((a, b) => a + b, 0) / values.length).toFixed(1)),
-                        min: parseFloat(Math.min(...values).toFixed(1)),
-                        max: parseFloat(Math.max(...values).toFixed(1)),
-                        last: parseFloat(values[values.length - 1].toFixed(1))
-                    };
-                }
-                
-                return null;
+            // Работа с данными давления
+            addPressureRecord(record) {
+                record.id = Date.now().toString();
+                record.timestamp = new Date(`${record.date}T${record.time}`).getTime();
+                this.pressureRecords.push(record);
+                this.savePressureRecords();
+                this.updateAllDisplays();
             }
 
-            // Обновление статистики
-            updateStats() {
+            updatePressureRecord(updatedRecord) {
+                const index = this.pressureRecords.findIndex(r => r.id === updatedRecord.id);
+                if (index !== -1) {
+                    updatedRecord.timestamp = new Date(`${updatedRecord.date}T${updatedRecord.time}`).getTime();
+                    this.pressureRecords[index] = updatedRecord;
+                    this.savePressureRecords();
+                    this.updateAllDisplays();
+                }
+            }
+
+            deletePressureRecord(id) {
+                this.pressureRecords = this.pressureRecords.filter(r => r.id !== id);
+                this.savePressureRecords();
+                this.updateAllDisplays();
+            }
+
+            // Работа с данными глюкозы
+            addGlucoseRecord(record) {
+                record.id = Date.now().toString();
+                record.timestamp = new Date(`${record.date}T${record.time}`).getTime();
+                this.glucoseRecords.push(record);
+                this.saveGlucoseRecords();
+                this.updateAllDisplays();
+            }
+
+            updateGlucoseRecord(updatedRecord) {
+                const index = this.glucoseRecords.findIndex(r => r.id === updatedRecord.id);
+                if (index !== -1) {
+                    updatedRecord.timestamp = new Date(`${updatedRecord.date}T${updatedRecord.time}`).getTime();
+                    this.glucoseRecords[index] = updatedRecord;
+                    this.saveGlucoseRecords();
+                    this.updateAllDisplays();
+                }
+            }
+
+            deleteGlucoseRecord(id) {
+                this.glucoseRecords = this.glucoseRecords.filter(r => r.id !== id);
+                this.saveGlucoseRecords();
+                this.updateAllDisplays();
+            }
+
+            // Сохранение в localStorage
+            savePressureRecords() {
+                localStorage.setItem('pressureRecords', JSON.stringify(this.pressureRecords));
+            }
+
+            saveGlucoseRecords() {
+                localStorage.setItem('glucoseRecords', JSON.stringify(this.glucoseRecords));
+            }
+
+            // Обновление интерфейса
+            updateAllDisplays() {
                 this.updatePressureStats();
                 this.updateGlucoseStats();
+                this.updateCombinedStats();
                 this.updateOverallStats();
+                this.renderPressureRecords();
+                this.renderGlucoseRecords();
+                this.renderCombinedRecords();
+                this.updateCharts();
             }
 
+            // Статистика давления
             updatePressureStats() {
                 const container = document.getElementById('pressure-stats');
                 if (!container) return;
-                
-                const filteredRecords = this.filterDataByTime(this.pressureRecords, this.statsFilters.pressure);
-                const stats = this.calculateStats(filteredRecords, 'pressure');
-                
-                if (stats.count === 0) {
+
+                if (this.pressureRecords.length === 0) {
                     container.innerHTML = '<div class="empty-state">Нет данных для отображения</div>';
                     return;
                 }
-                
+
+                const systolicValues = this.pressureRecords.map(r => r.systolic);
+                const diastolicValues = this.pressureRecords.map(r => r.diastolic);
+                const pulseValues = this.pressureRecords.map(r => r.pulse);
+
+                const stats = {
+                    systolic: {
+                        avg: Math.round(systolicValues.reduce((a, b) => a + b, 0) / systolicValues.length),
+                        min: Math.min(...systolicValues),
+                        max: Math.max(...systolicValues),
+                        last: systolicValues[systolicValues.length - 1]
+                    },
+                    diastolic: {
+                        avg: Math.round(diastolicValues.reduce((a, b) => a + b, 0) / diastolicValues.length),
+                        min: Math.min(...diastolicValues),
+                        max: Math.max(...diastolicValues),
+                        last: diastolicValues[diastolicValues.length - 1]
+                    },
+                    pulse: {
+                        avg: Math.round(pulseValues.reduce((a, b) => a + b, 0) / pulseValues.length),
+                        min: Math.min(...pulseValues),
+                        max: Math.max(...pulseValues),
+                        last: pulseValues[pulseValues.length - 1]
+                    }
+                };
+
                 container.innerHTML = `
                     <div class="stat-card">
                         <div class="stat-label">Количество измерений</div>
-                        <div class="stat-value">${stats.count}</div>
+                        <div class="stat-value">${this.pressureRecords.length}</div>
                     </div>
                     <div class="stat-card">
                         <div class="stat-label">Среднее давление</div>
@@ -1175,22 +1186,28 @@
                 `;
             }
 
+            // Статистика глюкозы
             updateGlucoseStats() {
                 const container = document.getElementById('glucose-stats');
                 if (!container) return;
-                
-                const filteredRecords = this.filterDataByTime(this.glucoseRecords, this.statsFilters.glucose);
-                const stats = this.calculateStats(filteredRecords, 'glucose');
-                
-                if (stats.count === 0) {
+
+                if (this.glucoseRecords.length === 0) {
                     container.innerHTML = '<div class="empty-state">Нет данных для отображения</div>';
                     return;
                 }
-                
+
+                const values = this.glucoseRecords.map(r => r.value);
+                const stats = {
+                    avg: parseFloat((values.reduce((a, b) => a + b, 0) / values.length).toFixed(1)),
+                    min: parseFloat(Math.min(...values).toFixed(1)),
+                    max: parseFloat(Math.max(...values).toFixed(1)),
+                    last: parseFloat(values[values.length - 1].toFixed(1))
+                };
+
                 container.innerHTML = `
                     <div class="stat-card">
                         <div class="stat-label">Количество измерений</div>
-                        <div class="stat-value">${stats.count}</div>
+                        <div class="stat-value">${this.glucoseRecords.length}</div>
                     </div>
                     <div class="stat-card">
                         <div class="stat-label">Средняя глюкоза</div>
@@ -1207,91 +1224,85 @@
                 `;
             }
 
-            updateOverallStats() {
-                const container = document.getElementById('overall-stats');
+            // Остальные методы статистики
+            updateCombinedStats() {
+                const container = document.getElementById('combined-stats');
                 if (!container) return;
-                
-                const pressureStats = this.calculateStats(this.pressureRecords, 'pressure');
-                const glucoseStats = this.calculateStats(this.glucoseRecords, 'glucose');
-                
-                if (pressureStats.count === 0 && glucoseStats.count === 0) {
+
+                if (this.pressureRecords.length === 0 && this.glucoseRecords.length === 0) {
                     container.innerHTML = '<div class="empty-state">Нет данных для отображения</div>';
                     return;
                 }
-                
+
                 let html = '';
                 
-                if (pressureStats.count > 0) {
+                if (this.pressureRecords.length > 0) {
                     html += `
                         <div class="stat-card">
                             <div class="stat-label">Измерений давления</div>
-                            <div class="stat-value">${pressureStats.count}</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-label">Среднее давление</div>
-                            <div class="stat-value">${pressureStats.systolic.avg}/${pressureStats.diastolic.avg}</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-label">Средний пульс</div>
-                            <div class="stat-value">${pressureStats.pulse.avg}</div>
+                            <div class="stat-value">${this.pressureRecords.length}</div>
                         </div>
                     `;
                 }
                 
-                if (glucoseStats.count > 0) {
+                if (this.glucoseRecords.length > 0) {
                     html += `
                         <div class="stat-card">
                             <div class="stat-label">Измерений глюкозы</div>
-                            <div class="stat-value">${glucoseStats.count}</div>
+                            <div class="stat-value">${this.glucoseRecords.length}</div>
                         </div>
+                    `;
+                }
+
+                container.innerHTML = html;
+            }
+
+            updateOverallStats() {
+                const container = document.getElementById('overall-stats');
+                if (!container) return;
+
+                if (this.pressureRecords.length === 0 && this.glucoseRecords.length === 0) {
+                    container.innerHTML = '<div class="empty-state">Нет данных для отображения</div>';
+                    return;
+                }
+
+                let html = '';
+                
+                if (this.pressureRecords.length > 0) {
+                    html += `
                         <div class="stat-card">
-                            <div class="stat-label">Средняя глюкоза</div>
-                            <div class="stat-value">${glucoseStats.avg}</div>
+                            <div class="stat-label">Измерений давления</div>
+                            <div class="stat-value">${this.pressureRecords.length}</div>
                         </div>
                     `;
                 }
                 
+                if (this.glucoseRecords.length > 0) {
+                    html += `
+                        <div class="stat-card">
+                            <div class="stat-label">Измерений глюкозы</div>
+                            <div class="stat-value">${this.glucoseRecords.length}</div>
+                        </div>
+                    `;
+                }
+
                 container.innerHTML = html;
             }
 
+            // Рендеринг записей
             renderPressureRecords() {
                 const container = document.getElementById('pressure-records');
-                const searchTerm = document.getElementById('pressure-search').value;
-                const sortOrder = document.getElementById('pressure-sort').value;
-                
-                let records = this.pressureRecords;
-                
-                // Поиск
-                if (searchTerm) {
-                    records = records.filter(record => 
-                        record.comment.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                        record.date.includes(searchTerm) ||
-                        record.time.includes(searchTerm) ||
-                        `${record.systolic}/${record.diastolic}`.includes(searchTerm) ||
-                        record.pulse.toString().includes(searchTerm)
-                    );
-                }
-                
-                // Сортировка
-                records = records.sort((a, b) => {
-                    if (sortOrder === 'newest') {
-                        return b.timestamp - a.timestamp;
-                    } else {
-                        return a.timestamp - b.timestamp;
-                    }
-                });
-                
-                if (records.length === 0) {
+                if (!container) return;
+
+                if (this.pressureRecords.length === 0) {
                     container.innerHTML = '<div class="empty-state">Записей не найдено</div>';
                     return;
                 }
+
+                const sortedRecords = [...this.pressureRecords].sort((a, b) => b.timestamp - a.timestamp);
                 
-                container.innerHTML = '';
-                
-                records.forEach(record => {
-                    const recordElement = document.createElement('div');
-                    recordElement.className = 'record-item';
-                    recordElement.innerHTML = `
+                container.innerHTML = sortedRecords.map(record => `
+                    <div class="record-item">
                         <div class="record-values">
                             <div class="record-value"><strong>Дата:</strong> ${this.formatDate(record.date)}</div>
                             <div class="record-value"><strong>Время:</strong> ${record.time}</div>
@@ -1303,71 +1314,28 @@
                             <button class="edit-btn" data-id="${record.id}">Редактировать</button>
                             <button class="delete-btn" data-id="${record.id}">Удалить</button>
                         </div>
-                    `;
-                    container.appendChild(recordElement);
-                });
-                
-                // Добавляем обработчики событий для кнопок
-                container.querySelectorAll('.edit-btn').forEach(btn => {
-                    btn.addEventListener('click', (e) => {
-                        const id = e.target.getAttribute('data-id');
-                        this.openEditModal('pressure', id);
-                    });
-                });
-                
-                container.querySelectorAll('.delete-btn').forEach(btn => {
-                    btn.addEventListener('click', (e) => {
-                        const id = e.target.getAttribute('data-id');
-                        if (confirm('Вы уверены, что хотите удалить эту запись?')) {
-                            this.deletePressureRecord(id);
-                        }
-                    });
-                });
+                    </div>
+                `).join('');
             }
 
             renderGlucoseRecords() {
                 const container = document.getElementById('glucose-records');
-                const searchTerm = document.getElementById('glucose-search').value;
-                const sortOrder = document.getElementById('glucose-sort').value;
-                
-                let records = this.glucoseRecords;
-                
-                // Поиск
-                if (searchTerm) {
-                    records = records.filter(record => 
-                        record.comment.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                        record.date.includes(searchTerm) ||
-                        record.time.includes(searchTerm) ||
-                        record.value.toString().includes(searchTerm)
-                    );
-                }
-                
-                // Сортировка
-                records = records.sort((a, b) => {
-                    if (sortOrder === 'newest') {
-                        return b.timestamp - a.timestamp;
-                    } else {
-                        return a.timestamp - b.timestamp;
-                    }
-                });
-                
-                if (records.length === 0) {
+                if (!container) return;
+
+                if (this.glucoseRecords.length === 0) {
                     container.innerHTML = '<div class="empty-state">Записей не найдено</div>';
                     return;
                 }
-                
-                container.innerHTML = '';
-                
+
+                const sortedRecords = [...this.glucoseRecords].sort((a, b) => b.timestamp - a.timestamp);
                 const mealStatusText = {
                     'none': 'Не ел ближайшее время',
                     '30min': 'Ел в течение получаса',
                     '1hour': 'Ел в течение часа'
                 };
                 
-                records.forEach(record => {
-                    const recordElement = document.createElement('div');
-                    recordElement.className = 'record-item';
-                    recordElement.innerHTML = `
+                container.innerHTML = sortedRecords.map(record => `
+                    <div class="record-item">
                         <div class="record-values">
                             <div class="record-value"><strong>Дата:</strong> ${this.formatDate(record.date)}</div>
                             <div class="record-value"><strong>Время:</strong> ${record.time}</div>
@@ -1379,676 +1347,291 @@
                             <button class="edit-btn" data-id="${record.id}">Редактировать</button>
                             <button class="delete-btn" data-id="${record.id}">Удалить</button>
                         </div>
-                    `;
-                    container.appendChild(recordElement);
-                });
-                
-                // Добавляем обработчики событий для кнопок
-                container.querySelectorAll('.edit-btn').forEach(btn => {
-                    btn.addEventListener('click', (e) => {
-                        const id = e.target.getAttribute('data-id');
-                        this.openEditModal('glucose', id);
-                    });
-                });
-                
-                container.querySelectorAll('.delete-btn').forEach(btn => {
-                    btn.addEventListener('click', (e) => {
-                        const id = e.target.getAttribute('data-id');
-                        if (confirm('Вы уверены, что хотите удалить эту запись?')) {
-                            this.deleteGlucoseRecord(id);
-                        }
-                    });
-                });
+                    </div>
+                `).join('');
             }
 
-            openEditModal(type, id) {
-                this.editingType = type;
-                
-                if (type === 'pressure') {
-                    this.editingRecord = this.pressureRecords.find(record => record.id === id);
-                    document.getElementById('modal-title').textContent = 'Редактирование измерения давления';
-                    
-                    document.getElementById('modal-fields').innerHTML = `
-                        <div class="form-group">
-                            <label for="edit-systolic">Систолическое давление</label>
-                            <input type="number" id="edit-systolic" value="${this.editingRecord.systolic}" required min="50" max="250">
-                        </div>
-                        <div class="form-group">
-                            <label for="edit-diastolic">Диастолическое давление</label>
-                            <input type="number" id="edit-diastolic" value="${this.editingRecord.diastolic}" required min="30" max="150">
-                        </div>
-                        <div class="form-group">
-                            <label for="edit-pulse">Пульс</label>
-                            <input type="number" id="edit-pulse" value="${this.editingRecord.pulse}" required min="30" max="200">
-                        </div>
-                        <div class="form-group">
-                            <label for="edit-date">Дата</label>
-                            <input type="date" id="edit-date" value="${this.editingRecord.date}" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="edit-time">Время</label>
-                            <input type="time" id="edit-time" value="${this.editingRecord.time}" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="edit-comment">Комментарий</label>
-                            <textarea id="edit-comment" rows="3">${this.editingRecord.comment || ''}</textarea>
-                        </div>
-                    `;
-                } else {
-                    this.editingRecord = this.glucoseRecords.find(record => record.id === id);
-                    document.getElementById('modal-title').textContent = 'Редактирование измерения глюкозы';
-                    
-                    document.getElementById('modal-fields').innerHTML = `
-                        <div class="form-group">
-                            <label for="edit-value">Уровень глюкозы</label>
-                            <input type="number" id="edit-value" step="0.1" value="${this.editingRecord.value}" required min="1" max="30">
-                        </div>
-                        <div class="form-group">
-                            <label for="edit-date">Дата</label>
-                            <input type="date" id="edit-date" value="${this.editingRecord.date}" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="edit-time">Время</label>
-                            <input type="time" id="edit-time" value="${this.editingRecord.time}" required>
-                        </div>
-                        <div class="form-group">
-                            <label>Состояние приема пищи</label>
-                            <div class="meal-status">
-                                <div class="meal-options">
-                                    <div class="meal-option">
-                                        <button type="button" class="meal-btn ${this.editingRecord.mealStatus === 'none' ? 'active' : ''}" data-meal-status="none">Не ел ближайшее время</button>
-                                    </div>
-                                    <div class="meal-option">
-                                        <button type="button" class="meal-btn ${this.editingRecord.mealStatus === '30min' ? 'active' : ''}" data-meal-status="30min">Ел в течение получаса</button>
-                                    </div>
-                                    <div class="meal-option">
-                                        <button type="button" class="meal-btn ${this.editingRecord.mealStatus === '1hour' ? 'active' : ''}" data-meal-status="1hour">Ел в течение часа</button>
-                                    </div>
+            renderCombinedRecords() {
+                const container = document.getElementById('combined-records');
+                if (!container) return;
+
+                const allRecords = [
+                    ...this.pressureRecords.map(r => ({...r, type: 'pressure'})),
+                    ...this.glucoseRecords.map(r => ({...r, type: 'glucose'}))
+                ].sort((a, b) => b.timestamp - a.timestamp);
+
+                if (allRecords.length === 0) {
+                    container.innerHTML = '<div class="empty-state">Записей не найдено</div>';
+                    return;
+                }
+
+                container.innerHTML = allRecords.map(record => {
+                    if (record.type === 'pressure') {
+                        return `
+                            <div class="record-item">
+                                <div class="record-values">
+                                    <div class="record-value"><strong>Дата:</strong> ${this.formatDate(record.date)}</div>
+                                    <div class="record-value"><strong>Время:</strong> ${record.time}</div>
+                                    <div class="record-value"><strong>Давление:</strong> ${record.systolic}/${record.diastolic}</div>
+                                    <div class="record-value"><strong>Пульс:</strong> ${record.pulse}</div>
+                                    ${record.comment ? `<div class="record-comment"><strong>Комментарий:</strong> ${record.comment}</div>` : ''}
                                 </div>
-                                <input type="hidden" id="edit-meal-status" name="edit-meal-status" value="${this.editingRecord.mealStatus}">
+                                <div class="record-actions">
+                                    <button class="delete-btn" data-id="${record.id}" data-type="pressure">Удалить</button>
+                                </div>
                             </div>
-                        </div>
-                        <div class="form-group">
-                            <label for="edit-comment">Комментарий</label>
-                            <textarea id="edit-comment" rows="3">${this.editingRecord.comment || ''}</textarea>
-                        </div>
-                    `;
-                    
-                    // Добавляем обработчики для кнопок состояния приема пищи в модальном окне
-                    document.querySelectorAll('#edit-form .meal-btn').forEach(btn => {
-                        btn.addEventListener('click', (e) => {
-                            document.querySelectorAll('#edit-form .meal-btn').forEach(b => b.classList.remove('active'));
-                            e.target.classList.add('active');
-                            document.getElementById('edit-meal-status').value = e.target.getAttribute('data-meal-status');
-                        });
-                    });
-                }
-                
-                document.getElementById('edit-modal').style.display = 'flex';
-            }
-
-            closeEditModal() {
-                document.getElementById('edit-modal').style.display = 'none';
-                this.editingRecord = null;
-                this.editingType = null;
-            }
-
-            openImportModal() {
-                document.getElementById('import-modal').style.display = 'flex';
-                document.getElementById('import-file').value = '';
-            }
-
-            closeImportModal() {
-                document.getElementById('import-modal').style.display = 'none';
-            }
-
-            openFullscreenChart(chartType) {
-                const titleMap = {
-                    'pulse': 'График пульса',
-                    'pressure': 'График давления',
-                    'glucose': 'График глюкозы',
-                    'overview': 'Сводный график'
-                };
-                
-                document.getElementById('fullscreen-title').textContent = titleMap[chartType] || 'График';
-                document.getElementById('fullscreen-modal').style.display = 'flex';
-                
-                // Создаем копию графика для полноэкранного режима
-                setTimeout(() => {
-                    this.createFullscreenChart(chartType);
-                }, 100);
-            }
-
-            createFullscreenChart(chartType) {
-                const canvas = document.getElementById('fullscreen-chart');
-                const ctx = canvas.getContext('2d');
-                
-                // Очищаем предыдущий график
-                if (this.charts.fullscreen) {
-                    this.charts.fullscreen.destroy();
-                }
-                
-                // Создаем новый график на основе типа
-                if (chartType === 'pulse') {
-                    this.createPulseChart(ctx, true);
-                } else if (chartType === 'pressure') {
-                    this.createPressureChart(ctx, true);
-                } else if (chartType === 'glucose') {
-                    this.createGlucoseChart(ctx, true);
-                } else {
-                    this.createOverviewChart(ctx, true);
-                }
-            }
-
-            closeFullscreenChart() {
-                document.getElementById('fullscreen-modal').style.display = 'none';
-                if (this.charts.fullscreen) {
-                    this.charts.fullscreen.destroy();
-                    this.charts.fullscreen = null;
-                }
-            }
-
-            updateCharts() {
-                this.updatePressureChart();
-                this.updatePulseChart();
-                this.updateGlucoseChart();
-                this.updateOverviewChart();
-            }
-
-            updatePressureChart() {
-                const ctx = document.getElementById('pressure-chart').getContext('2d');
-                this.createPressureChart(ctx);
-            }
-
-            createPressureChart(ctx, isFullscreen = false) {
-                const combinedData = this.getCombinedData();
-                let pressureData = combinedData.filter(item => item.type === 'pressure' || item.type === 'combined');
-                
-                // Применяем фильтр по времени суток
-                pressureData = this.filterDataByTime(pressureData, this.chartFilters.pressure);
-                
-                // Сортируем данные по времени
-                pressureData.sort((a, b) => a.timestamp - b.timestamp);
-                
-                const labels = pressureData.map(item => {
-                    const date = new Date(item.timestamp);
-                    return `${this.formatDate(item.date)} ${item.time}`;
-                });
-                
-                const systolicData = pressureData.map(item => item.pressure.systolic);
-                const diastolicData = pressureData.map(item => item.pressure.diastolic);
-                
-                if (isFullscreen) {
-                    if (this.charts.fullscreen) {
-                        this.charts.fullscreen.destroy();
-                    }
-                    
-                    this.charts.fullscreen = new Chart(ctx, {
-                        type: 'line',
-                        data: {
-                            labels: labels,
-                            datasets: [
-                                {
-                                    label: 'Систолическое давление',
-                                    data: systolicData,
-                                    borderColor: 'rgb(255, 99, 132)',
-                                    backgroundColor: 'rgba(255, 99, 132, 0.1)',
-                                    tension: 0.1
-                                },
-                                {
-                                    label: 'Диастолическое давление',
-                                    data: diastolicData,
-                                    borderColor: 'rgb(54, 162, 235)',
-                                    backgroundColor: 'rgba(54, 162, 235, 0.1)',
-                                    tension: 0.1
-                                }
-                            ]
-                        },
-                        options: {
-                            responsive: true,
-                            maintainAspectRatio: true,
-                            scales: {
-                                x: {
-                                    title: {
-                                        display: true,
-                                        text: 'Дата и время'
-                                    }
-                                },
-                                y: {
-                                    title: {
-                                        display: true,
-                                        text: 'Давление (мм рт. ст.)'
-                                    },
-                                    suggestedMin: 50,
-                                    suggestedMax: 200
-                                }
-                            }
-                        }
-                    });
-                } else {
-                    if (this.charts.pressure) {
-                        this.charts.pressure.destroy();
-                    }
-                    
-                    this.charts.pressure = new Chart(ctx, {
-                        type: 'line',
-                        data: {
-                            labels: labels,
-                            datasets: [
-                                {
-                                    label: 'Систолическое давление',
-                                    data: systolicData,
-                                    borderColor: 'rgb(255, 99, 132)',
-                                    backgroundColor: 'rgba(255, 99, 132, 0.1)',
-                                    tension: 0.1
-                                },
-                                {
-                                    label: 'Диастолическое давление',
-                                    data: diastolicData,
-                                    borderColor: 'rgb(54, 162, 235)',
-                                    backgroundColor: 'rgba(54, 162, 235, 0.1)',
-                                    tension: 0.1
-                                }
-                            ]
-                        },
-                        options: {
-                            responsive: true,
-                            scales: {
-                                x: {
-                                    title: {
-                                        display: true,
-                                        text: 'Дата и время'
-                                    }
-                                },
-                                y: {
-                                    title: {
-                                        display: true,
-                                        text: 'Давление (мм рт. ст.)'
-                                    },
-                                    suggestedMin: 50,
-                                    suggestedMax: 200
-                                }
-                            }
-                        }
-                    });
-                }
-            }
-
-            updatePulseChart() {
-                const ctx = document.getElementById('pulse-chart').getContext('2d');
-                this.createPulseChart(ctx);
-            }
-
-            createPulseChart(ctx, isFullscreen = false) {
-                const combinedData = this.getCombinedData();
-                let pulseData = combinedData.filter(item => item.type === 'pressure' || item.type === 'combined');
-                
-                // Применяем фильтр по времени суток
-                pulseData = this.filterDataByTime(pulseData, this.chartFilters.pulse);
-                
-                // Сортируем данные по времени
-                pulseData.sort((a, b) => a.timestamp - b.timestamp);
-                
-                const labels = pulseData.map(item => {
-                    const date = new Date(item.timestamp);
-                    return `${this.formatDate(item.date)} ${item.time}`;
-                });
-                
-                const pulseValues = pulseData.map(item => item.pressure.pulse);
-                
-                if (isFullscreen) {
-                    if (this.charts.fullscreen) {
-                        this.charts.fullscreen.destroy();
-                    }
-                    
-                    this.charts.fullscreen = new Chart(ctx, {
-                        type: 'line',
-                        data: {
-                            labels: labels,
-                            datasets: [
-                                {
-                                    label: 'Пульс',
-                                    data: pulseValues,
-                                    borderColor: 'rgb(75, 192, 192)',
-                                    backgroundColor: 'rgba(75, 192, 192, 0.1)',
-                                    tension: 0.1
-                                }
-                            ]
-                        },
-                        options: {
-                            responsive: true,
-                            maintainAspectRatio: true,
-                            scales: {
-                                x: {
-                                    title: {
-                                        display: true,
-                                        text: 'Дата и время'
-                                    }
-                                },
-                                y: {
-                                    title: {
-                                        display: true,
-                                        text: 'Пульс (уд/мин)'
-                                    },
-                                    suggestedMin: 50,
-                                    suggestedMax: 120
-                                }
-                            }
-                        }
-                    });
-                } else {
-                    if (this.charts.pulse) {
-                        this.charts.pulse.destroy();
-                    }
-                    
-                    this.charts.pulse = new Chart(ctx, {
-                        type: 'line',
-                        data: {
-                            labels: labels,
-                            datasets: [
-                                {
-                                    label: 'Пульс',
-                                    data: pulseValues,
-                                    borderColor: 'rgb(75, 192, 192)',
-                                    backgroundColor: 'rgba(75, 192, 192, 0.1)',
-                                    tension: 0.1
-                                }
-                            ]
-                        },
-                        options: {
-                            responsive: true,
-                            scales: {
-                                x: {
-                                    title: {
-                                        display: true,
-                                        text: 'Дата и время'
-                                    }
-                                },
-                                y: {
-                                    title: {
-                                        display: true,
-                                        text: 'Пульс (уд/мин)'
-                                    },
-                                    suggestedMin: 50,
-                                    suggestedMax: 120
-                                }
-                            }
-                        }
-                    });
-                }
-            }
-
-            updateGlucoseChart() {
-                const ctx = document.getElementById('glucose-chart').getContext('2d');
-                this.createGlucoseChart(ctx);
-            }
-
-            createGlucoseChart(ctx, isFullscreen = false) {
-                const combinedData = this.getCombinedData();
-                let glucoseData = combinedData.filter(item => item.type === 'glucose' || item.type === 'combined');
-                
-                // Применяем фильтр по времени суток
-                glucoseData = this.filterDataByTime(glucoseData, this.chartFilters.glucose);
-                
-                // Сортируем данные по времени
-                glucoseData.sort((a, b) => a.timestamp - b.timestamp);
-                
-                const labels = glucoseData.map(item => {
-                    const date = new Date(item.timestamp);
-                    return `${this.formatDate(item.date)} ${item.time}`;
-                });
-                
-                const glucoseValues = glucoseData.map(item => 
-                    item.type === 'combined' ? item.glucose.value : item.glucose.value
-                );
-                
-                if (isFullscreen) {
-                    if (this.charts.fullscreen) {
-                        this.charts.fullscreen.destroy();
-                    }
-                    
-                    this.charts.fullscreen = new Chart(ctx, {
-                        type: 'line',
-                        data: {
-                            labels: labels,
-                            datasets: [
-                                {
-                                    label: 'Глюкоза в крови',
-                                    data: glucoseValues,
-                                    borderColor: 'rgb(153, 102, 255)',
-                                    backgroundColor: 'rgba(153, 102, 255, 0.1)',
-                                    tension: 0.1
-                                }
-                            ]
-                        },
-                        options: {
-                            responsive: true,
-                            maintainAspectRatio: true,
-                            scales: {
-                                x: {
-                                    title: {
-                                        display: true,
-                                        text: 'Дата и время'
-                                    }
-                                },
-                                y: {
-                                    title: {
-                                        display: true,
-                                        text: 'Глюкоза (ммоль/л)'
-                                    },
-                                    suggestedMin: 3,
-                                    suggestedMax: 10
-                                }
-                            }
-                        }
-                    });
-                } else {
-                    if (this.charts.glucose) {
-                        this.charts.glucose.destroy();
-                    }
-                    
-                    this.charts.glucose = new Chart(ctx, {
-                        type: 'line',
-                        data: {
-                            labels: labels,
-                            datasets: [
-                                {
-                                    label: 'Глюкоза в крови',
-                                    data: glucoseValues,
-                                    borderColor: 'rgb(153, 102, 255)',
-                                    backgroundColor: 'rgba(153, 102, 255, 0.1)',
-                                    tension: 0.1
-                                }
-                            ]
-                        },
-                        options: {
-                            responsive: true,
-                            scales: {
-                                x: {
-                                    title: {
-                                        display: true,
-                                        text: 'Дата и время'
-                                    }
-                                },
-                                y: {
-                                    title: {
-                                        display: true,
-                                        text: 'Глюкоза (ммоль/л)'
-                                    },
-                                    suggestedMin: 3,
-                                    suggestedMax: 10
-                                }
-                            }
-                        }
-                    });
-                }
-            }
-
-            updateOverviewChart() {
-                const ctx = document.getElementById('overview-chart').getContext('2d');
-                this.createOverviewChart(ctx);
-            }
-
-            createOverviewChart(ctx, isFullscreen = false) {
-                // Для сводного графика покажем просто демо-данные
-                const labels = ['Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн'];
-                const data = [65, 59, 80, 81, 56, 55];
-                
-                if (isFullscreen) {
-                    if (this.charts.fullscreen) {
-                        this.charts.fullscreen.destroy();
-                    }
-                    
-                    this.charts.fullscreen = new Chart(ctx, {
-                        type: 'line',
-                        data: {
-                            labels: labels,
-                            datasets: [{
-                                label: 'Общий обзор',
-                                data: data,
-                                borderColor: 'rgb(255, 99, 132)',
-                                backgroundColor: 'rgba(255, 99, 132, 0.2)',
-                            }]
-                        },
-                        options: {
-                            responsive: true,
-                            maintainAspectRatio: true,
-                            plugins: {
-                                title: {
-                                    display: true,
-                                    text: 'Сводная статистика за последние 6 месяцев'
-                                }
-                            }
-                        }
-                    });
-                } else {
-                    if (this.charts.overview) {
-                        this.charts.overview.destroy();
-                    }
-                    
-                    this.charts.overview = new Chart(ctx, {
-                        type: 'line',
-                        data: {
-                            labels: labels,
-                            datasets: [{
-                                label: 'Общий обзор',
-                                data: data,
-                                borderColor: 'rgb(255, 99, 132)',
-                                backgroundColor: 'rgba(255, 99, 132, 0.2)',
-                            }]
-                        },
-                        options: {
-                            responsive: true,
-                            plugins: {
-                                title: {
-                                    display: true,
-                                    text: 'Сводная статистика за последние 6 месяцев'
-                                }
-                            }
-                        }
-                    });
-                }
-            }
-
-            getCombinedData() {
-                const combinedData = [];
-                const pressureSorted = [...this.pressureRecords].sort((a, b) => a.timestamp - b.timestamp);
-                const glucoseSorted = [...this.glucoseRecords].sort((a, b) => a.timestamp - b.timestamp);
-                
-                let pIndex = 0, gIndex = 0;
-                
-                while (pIndex < pressureSorted.length && gIndex < glucoseSorted.length) {
-                    const pressure = pressureSorted[pIndex];
-                    const glucose = glucoseSorted[gIndex];
-                    const timeDiff = Math.abs(pressure.timestamp - glucose.timestamp);
-                    
-                    if (timeDiff < 20 * 60 * 1000) {
-                        const avgTimestamp = (pressure.timestamp + glucose.timestamp) / 2;
-                        const avgDate = new Date(avgTimestamp);
-                        
-                        combinedData.push({
-                            type: 'combined',
-                            timestamp: avgTimestamp,
-                            date: avgDate.toISOString().split('T')[0],
-                            time: avgDate.toTimeString().slice(0, 5),
-                            pressure: pressure,
-                            glucose: glucose
-                        });
-                        
-                        pIndex++;
-                        gIndex++;
-                    } else if (pressure.timestamp < glucose.timestamp) {
-                        combinedData.push({
-                            type: 'pressure',
-                            timestamp: pressure.timestamp,
-                            date: pressure.date,
-                            time: pressure.time,
-                            pressure: pressure
-                        });
-                        pIndex++;
+                        `;
                     } else {
-                        combinedData.push({
-                            type: 'glucose',
-                            timestamp: glucose.timestamp,
-                            date: glucose.date,
-                            time: glucose.time,
-                            glucose: glucose
-                        });
-                        gIndex++;
+                        const mealStatusText = {
+                            'none': 'Не ел ближайшее время',
+                            '30min': 'Ел в течение получаса',
+                            '1hour': 'Ел в течение часа'
+                        };
+                        
+                        return `
+                            <div class="record-item">
+                                <div class="record-values">
+                                    <div class="record-value"><strong>Дата:</strong> ${this.formatDate(record.date)}</div>
+                                    <div class="record-value"><strong>Время:</strong> ${record.time}</div>
+                                    <div class="record-value"><strong>Глюкоза:</strong> ${record.value} ммоль/л</div>
+                                    <div class="record-value"><strong>Прием пищи:</strong> ${mealStatusText[record.mealStatus] || 'Не указано'}</div>
+                                    ${record.comment ? `<div class="record-comment"><strong>Комментарий:</strong> ${record.comment}</div>` : ''}
+                                </div>
+                                <div class="record-actions">
+                                    <button class="delete-btn" data-id="${record.id}" data-type="glucose">Удалить</button>
+                                </div>
+                            </div>
+                        `;
                     }
-                }
-                
-                while (pIndex < pressureSorted.length) {
-                    const pressure = pressureSorted[pIndex];
-                    combinedData.push({
-                        type: 'pressure',
-                        timestamp: pressure.timestamp,
-                        date: pressure.date,
-                        time: pressure.time,
-                        pressure: pressure
-                    });
-                    pIndex++;
-                }
-                
-                while (gIndex < glucoseSorted.length) {
-                    const glucose = glucoseSorted[gIndex];
-                    combinedData.push({
-                        type: 'glucose',
-                        timestamp: glucose.timestamp,
-                        date: glucose.date,
-                        time: glucose.time,
-                        glucose: glucose
-                    });
-                    gIndex++;
-                }
-                
-                return combinedData;
+                }).join('');
             }
 
-            setChartFilter(chartType, filter) {
-                this.chartFilters[chartType] = filter;
-                this.updateCharts();
-                
-                const filterContainer = document.querySelector(`.chart-filter[data-chart="${chartType}"]`);
-                if (filterContainer) {
-                    filterContainer.querySelectorAll('.filter-btn').forEach(btn => {
-                        btn.classList.remove('active');
-                    });
-                    filterContainer.querySelector(`.filter-btn[data-filter="${filter}"]`).classList.add('active');
-                }
+            // Вспомогательные методы
+            formatDate(dateString) {
+                const date = new Date(dateString);
+                const day = date.getDate().toString().padStart(2, '0');
+                const month = (date.getMonth() + 1).toString().padStart(2, '0');
+                const year = date.getFullYear();
+                return `${day}.${month}.${year}`;
             }
 
-            setStatsFilter(statsType, filter) {
-                this.statsFilters[statsType] = filter;
-                this.updateStats();
-                
-                document.querySelectorAll(`[data-stats-type="${statsType}"]`).forEach(btn => {
-                    btn.classList.remove('active');
+            // Графики
+            updateCharts() {
+                this.createPressureChart();
+                this.createPulseChart();
+                this.createGlucoseChart();
+            }
+
+            createPressureChart() {
+                const ctx = document.getElementById('pressure-chart');
+                if (!ctx) return;
+
+                if (this.charts.pressure) {
+                    this.charts.pressure.destroy();
+                }
+
+                const sortedRecords = [...this.pressureRecords].sort((a, b) => a.timestamp - b.timestamp);
+
+                this.charts.pressure = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        datasets: [
+                            {
+                                label: 'Систолическое давление',
+                                data: sortedRecords.map(r => ({x: r.timestamp, y: r.systolic})),
+                                borderColor: 'rgb(255, 99, 132)',
+                                backgroundColor: 'rgba(255, 99, 132, 0.1)',
+                                tension: 0.1
+                            },
+                            {
+                                label: 'Диастолическое давление',
+                                data: sortedRecords.map(r => ({x: r.timestamp, y: r.diastolic})),
+                                borderColor: 'rgb(54, 162, 235)',
+                                backgroundColor: 'rgba(54, 162, 235, 0.1)',
+                                tension: 0.1
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        scales: {
+                            x: {
+                                type: 'time',
+                                time: {
+                                    unit: 'day',
+                                    displayFormats: {
+                                        day: 'dd.MM.yyyy'
+                                    }
+                                }
+                            }
+                        }
+                    }
                 });
-                document.querySelector(`[data-stats-type="${statsType}"][data-filter="${filter}"]`).classList.add('active');
             }
 
-            // Экспорт данных в JSON файл
+            createPulseChart() {
+                const ctx = document.getElementById('pulse-chart');
+                if (!ctx) return;
+
+                if (this.charts.pulse) {
+                    this.charts.pulse.destroy();
+                }
+
+                const sortedRecords = [...this.pressureRecords].sort((a, b) => a.timestamp - b.timestamp);
+
+                this.charts.pulse = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        datasets: [{
+                            label: 'Пульс',
+                            data: sortedRecords.map(r => ({x: r.timestamp, y: r.pulse})),
+                            borderColor: 'rgb(75, 192, 192)',
+                            backgroundColor: 'rgba(75, 192, 192, 0.1)',
+                            tension: 0.1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        scales: {
+                            x: {
+                                type: 'time',
+                                time: {
+                                    unit: 'day',
+                                    displayFormats: {
+                                        day: 'dd.MM.yyyy'
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            createGlucoseChart() {
+                const ctx = document.getElementById('glucose-chart');
+                if (!ctx) return;
+
+                if (this.charts.glucose) {
+                    this.charts.glucose.destroy();
+                }
+
+                const sortedRecords = [...this.glucoseRecords].sort((a, b) => a.timestamp - b.timestamp);
+
+                this.charts.glucose = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        datasets: [{
+                            label: 'Глюкоза в крови',
+                            data: sortedRecords.map(r => ({x: r.timestamp, y: r.value})),
+                            borderColor: 'rgb(153, 102, 255)',
+                            backgroundColor: 'rgba(153, 102, 255, 0.1)',
+                            tension: 0.1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        scales: {
+                            x: {
+                                type: 'time',
+                                time: {
+                                    unit: 'day',
+                                    displayFormats: {
+                                        day: 'dd.MM.yyyy'
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            // Обработчики событий
+            setupEventListeners() {
+                // Вкладки
+                document.querySelectorAll('.tab').forEach(tab => {
+                    tab.addEventListener('click', () => {
+                        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                        
+                        tab.classList.add('active');
+                        document.getElementById(tab.dataset.tab).classList.add('active');
+                    });
+                });
+
+                // Форма давления
+                document.getElementById('pressure-form').addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    const formData = new FormData(e.target);
+                    this.addPressureRecord({
+                        systolic: parseInt(formData.get('systolic')),
+                        diastolic: parseInt(formData.get('diastolic')),
+                        pulse: parseInt(formData.get('pulse')),
+                        date: document.getElementById('pressure-date').value,
+                        time: document.getElementById('pressure-time').value,
+                        comment: document.getElementById('pressure-comment').value
+                    });
+                    e.target.reset();
+                    this.setDefaultDateTime();
+                });
+
+                // Форма глюкозы
+                document.getElementById('glucose-form').addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    let value = document.getElementById('glucose-value').value.replace(',', '.');
+                    this.addGlucoseRecord({
+                        value: parseFloat(value),
+                        date: document.getElementById('glucose-date').value,
+                        time: document.getElementById('glucose-time').value,
+                        mealStatus: document.getElementById('meal-status').value,
+                        comment: document.getElementById('glucose-comment').value
+                    });
+                    e.target.reset();
+                    this.setDefaultDateTime();
+                });
+
+                // Кнопки приема пищи
+                document.querySelectorAll('.meal-btn').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        this.closest('.meal-status').querySelectorAll('.meal-btn').forEach(b => b.classList.remove('active'));
+                        this.classList.add('active');
+                        this.closest('.meal-status').querySelector('input[type="hidden"]').value = this.dataset.mealStatus;
+                    });
+                });
+
+                // Делегирование событий для кнопок удаления
+                document.addEventListener('click', (e) => {
+                    if (e.target.classList.contains('delete-btn')) {
+                        const id = e.target.dataset.id;
+                        const type = e.target.dataset.type;
+                        
+                        if (confirm('Вы уверены, что хотите удалить эту запись?')) {
+                            if (type === 'pressure') {
+                                this.deletePressureRecord(id);
+                            } else {
+                                this.deleteGlucoseRecord(id);
+                            }
+                        }
+                    }
+                });
+
+                // Экспорт/импорт
+                document.getElementById('export-btn').addEventListener('click', () => {
+                    this.exportData();
+                });
+
+                document.getElementById('import-btn').addEventListener('click', () => {
+                    document.getElementById('import-modal').style.display = 'flex';
+                });
+
+                // Закрытие модальных окон
+                document.querySelectorAll('.close-btn, .cancel-btn').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        this.closest('.modal').style.display = 'none';
+                    });
+                });
+            }
+
+            // Экспорт данных
             exportData() {
                 const data = {
                     pressureRecords: this.pressureRecords,
@@ -2068,293 +1651,11 @@
                 document.body.removeChild(link);
                 URL.revokeObjectURL(url);
             }
-
-            // Импорт данных из JSON файла
-            importData(file, importType) {
-                const reader = new FileReader();
-                
-                reader.onload = (e) => {
-                    try {
-                        const importedData = JSON.parse(e.target.result);
-                        
-                        if (importType === 'replace') {
-                            if (confirm('Вы уверены, что хотите заменить все текущие данные? Это действие нельзя отменить.')) {
-                                this.pressureRecords = importedData.pressureRecords || [];
-                                this.glucoseRecords = importedData.glucoseRecords || [];
-                                
-                                this.saveData('pressureRecords', this.pressureRecords);
-                                this.saveData('glucoseRecords', this.glucoseRecords);
-                                
-                                this.updateCharts();
-                                this.updateStats();
-                                this.renderPressureRecords();
-                                this.renderGlucoseRecords();
-                                
-                                alert('Данные успешно импортированы и заменены.');
-                            }
-                        } else if (importType === 'merge') {
-                            this.mergeData(importedData);
-                            alert('Данные успешно импортированы и объединены с текущими.');
-                        }
-                    } catch (error) {
-                        alert('Ошибка при импорте данных: файл имеет неверный формат.');
-                        console.error('Import error:', error);
-                    }
-                };
-                
-                reader.readAsText(file);
-            }
-
-            // Объединение импортированных данных с текущими
-            mergeData(importedData) {
-                if (importedData.pressureRecords) {
-                    const existingPressureMap = new Map();
-                    this.pressureRecords.forEach(record => {
-                        existingPressureMap.set(record.id, record);
-                    });
-                    
-                    importedData.pressureRecords.forEach(record => {
-                        existingPressureMap.set(record.id, record);
-                    });
-                    
-                    this.pressureRecords = Array.from(existingPressureMap.values());
-                }
-                
-                if (importedData.glucoseRecords) {
-                    const existingGlucoseMap = new Map();
-                    this.glucoseRecords.forEach(record => {
-                        existingGlucoseMap.set(record.id, record);
-                    });
-                    
-                    importedData.glucoseRecords.forEach(record => {
-                        existingGlucoseMap.set(record.id, record);
-                    });
-                    
-                    this.glucoseRecords = Array.from(existingGlucoseMap.values());
-                }
-                
-                this.saveData('pressureRecords', this.pressureRecords);
-                this.saveData('glucoseRecords', this.glucoseRecords);
-                
-                this.updateCharts();
-                this.updateStats();
-                this.renderPressureRecords();
-                this.renderGlucoseRecords();
-            }
-
-            init() {
-                const now = new Date();
-                const today = now.toISOString().split('T')[0];
-                const time = now.toTimeString().slice(0, 5);
-                
-                document.getElementById('pressure-date').value = today;
-                document.getElementById('pressure-time').value = time;
-                document.getElementById('glucose-date').value = today;
-                document.getElementById('glucose-time').value = time;
-                
-                this.updateCharts();
-                this.updateStats();
-                this.renderPressureRecords();
-                this.renderGlucoseRecords();
-                
-                this.setupEventListeners();
-            }
-
-            setupEventListeners() {
-                document.querySelectorAll('.tab').forEach(tab => {
-                    tab.addEventListener('click', () => {
-                        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-                        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-                        
-                        tab.classList.add('active');
-                        document.getElementById(tab.getAttribute('data-tab')).classList.add('active');
-                    });
-                });
-                
-                document.getElementById('pressure-form').addEventListener('submit', (e) => {
-                    e.preventDefault();
-                    
-                    const systolic = document.getElementById('systolic').value;
-                    const diastolic = document.getElementById('diastolic').value;
-                    const pulse = document.getElementById('pulse').value;
-                    const date = document.getElementById('pressure-date').value;
-                    const time = document.getElementById('pressure-time').value;
-                    const comment = document.getElementById('pressure-comment').value;
-                    
-                    const record = new PressureRecord(systolic, diastolic, pulse, date, time, comment);
-                    if (this.addPressureRecord(record)) {
-                        document.getElementById('pressure-form').reset();
-                        
-                        const now = new Date();
-                        const today = now.toISOString().split('T')[0];
-                        const currentTime = now.toTimeString().slice(0, 5);
-                        
-                        document.getElementById('pressure-date').value = today;
-                        document.getElementById('pressure-time').value = currentTime;
-                    }
-                });
-                
-                document.getElementById('glucose-form').addEventListener('submit', (e) => {
-                    e.preventDefault();
-                    
-                    const value = document.getElementById('glucose-value').value;
-                    const date = document.getElementById('glucose-date').value;
-                    const time = document.getElementById('glucose-time').value;
-                    const mealStatus = document.getElementById('meal-status').value;
-                    const comment = document.getElementById('glucose-comment').value;
-                    
-                    const record = new GlucoseRecord(value, date, time, mealStatus, comment);
-                    if (this.addGlucoseRecord(record)) {
-                        document.getElementById('glucose-form').reset();
-                        
-                        const now = new Date();
-                        const today = now.toISOString().split('T')[0];
-                        const currentTime = now.toTimeString().slice(0, 5);
-                        
-                        document.getElementById('glucose-date').value = today;
-                        document.getElementById('glucose-time').value = currentTime;
-                        
-                        document.querySelectorAll('.meal-btn').forEach(btn => btn.classList.remove('active'));
-                        document.querySelector('.meal-btn[data-meal-status="none"]').classList.add('active');
-                        document.getElementById('meal-status').value = 'none';
-                    }
-                });
-                
-                document.querySelectorAll('.meal-btn').forEach(btn => {
-                    btn.addEventListener('click', (e) => {
-                        document.querySelectorAll('.meal-btn').forEach(b => b.classList.remove('active'));
-                        e.target.classList.add('active');
-                        document.getElementById('meal-status').value = e.target.getAttribute('data-meal-status');
-                    });
-                });
-                
-                document.getElementById('edit-form').addEventListener('submit', (e) => {
-                    e.preventDefault();
-                    
-                    if (this.editingType === 'pressure') {
-                        const systolic = document.getElementById('edit-systolic').value;
-                        const diastolic = document.getElementById('edit-diastolic').value;
-                        const pulse = document.getElementById('edit-pulse').value;
-                        const date = document.getElementById('edit-date').value;
-                        const time = document.getElementById('edit-time').value;
-                        const comment = document.getElementById('edit-comment').value;
-                        
-                        const updatedRecord = new PressureRecord(
-                            systolic, diastolic, pulse, date, time, comment, this.editingRecord.id
-                        );
-                        
-                        this.updatePressureRecord(this.editingRecord.id, updatedRecord);
-                    } else {
-                        const value = document.getElementById('edit-value').value;
-                        const date = document.getElementById('edit-date').value;
-                        const time = document.getElementById('edit-time').value;
-                        const mealStatus = document.getElementById('edit-meal-status').value;
-                        const comment = document.getElementById('edit-comment').value;
-                        
-                        const updatedRecord = new GlucoseRecord(
-                            value, date, time, mealStatus, comment, this.editingRecord.id
-                        );
-                        
-                        this.updateGlucoseRecord(this.editingRecord.id, updatedRecord);
-                    }
-                    
-                    this.closeEditModal();
-                });
-                
-                document.getElementById('cancel-edit').addEventListener('click', () => {
-                    this.closeEditModal();
-                });
-                
-                document.getElementById('close-edit').addEventListener('click', () => {
-                    this.closeEditModal();
-                });
-                
-                document.getElementById('export-btn').addEventListener('click', () => {
-                    this.exportData();
-                });
-                
-                document.getElementById('import-btn').addEventListener('click', () => {
-                    this.openImportModal();
-                });
-                
-                document.getElementById('cancel-import').addEventListener('click', () => {
-                    this.closeImportModal();
-                });
-                
-                document.getElementById('close-import').addEventListener('click', () => {
-                    this.closeImportModal();
-                });
-                
-                document.getElementById('confirm-import').addEventListener('click', () => {
-                    const fileInput = document.getElementById('import-file');
-                    const importType = document.querySelector('input[name="import-type"]:checked').value;
-                    
-                    if (fileInput.files.length === 0) {
-                        alert('Пожалуйста, выберите файл для импорта.');
-                        return;
-                    }
-                    
-                    this.importData(fileInput.files[0], importType);
-                    this.closeImportModal();
-                });
-                
-                document.getElementById('close-fullscreen').addEventListener('click', () => {
-                    this.closeFullscreenChart();
-                });
-                
-                document.querySelectorAll('.filter-btn[data-filter]').forEach(btn => {
-                    btn.addEventListener('click', (e) => {
-                        const chartType = e.target.closest('.chart-filter')?.getAttribute('data-chart');
-                        const filter = e.target.getAttribute('data-filter');
-                        if (chartType) {
-                            this.setChartFilter(chartType, filter);
-                        }
-                    });
-                });
-                
-                document.querySelectorAll('.filter-btn[data-stats-type]').forEach(btn => {
-                    btn.addEventListener('click', (e) => {
-                        const statsType = e.target.getAttribute('data-stats-type');
-                        const filter = e.target.getAttribute('data-filter');
-                        this.setStatsFilter(statsType, filter);
-                    });
-                });
-                
-                document.querySelectorAll('.control-btn[data-action="fullscreen"]').forEach(btn => {
-                    btn.addEventListener('click', (e) => {
-                        const chartType = e.target.getAttribute('data-chart');
-                        this.openFullscreenChart(chartType);
-                    });
-                });
-                
-                document.querySelectorAll('.control-btn[data-action="reset-zoom"]').forEach(btn => {
-                    btn.addEventListener('click', (e) => {
-                        // В реальном приложении здесь будет сброс масштаба
-                        alert('Функция сброса масштаба будет реализована в будущем');
-                    });
-                });
-                
-                document.getElementById('pressure-search').addEventListener('input', () => {
-                    this.renderPressureRecords();
-                });
-                
-                document.getElementById('pressure-sort').addEventListener('change', () => {
-                    this.renderPressureRecords();
-                });
-                
-                document.getElementById('glucose-search').addEventListener('input', () => {
-                    this.renderGlucoseRecords();
-                });
-                
-                document.getElementById('glucose-sort').addEventListener('change', () => {
-                    this.renderGlucoseRecords();
-                });
-            }
         }
 
+        // Инициализация приложения
         document.addEventListener('DOMContentLoaded', () => {
-            const healthManager = new HealthDataManager();
-            healthManager.init();
+            window.healthManager = new HealthDataManager();
         });
     </script>
 </body>
