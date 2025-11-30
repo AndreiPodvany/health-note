@@ -611,27 +611,27 @@
             <form id="pressure-form">
                 <div class="form-group">
                     <label for="systolic">Систолическое давление (верхнее)</label>
-                    <input type="number" id="systolic" required min="50" max="250">
+                    <input type="number" id="systolic" name="systolic" required min="50" max="250">
                 </div>
                 <div class="form-group">
                     <label for="diastolic">Диастолическое давление (нижнее)</label>
-                    <input type="number" id="diastolic" required min="30" max="150">
+                    <input type="number" id="diastolic" name="diastolic" required min="30" max="150">
                 </div>
                 <div class="form-group">
                     <label for="pulse">Пульс</label>
-                    <input type="number" id="pulse" required min="30" max="200">
+                    <input type="number" id="pulse" name="pulse" required min="30" max="200">
                 </div>
                 <div class="form-group">
                     <label for="pressure-date">Дата</label>
-                    <input type="date" id="pressure-date" required>
+                    <input type="date" id="pressure-date" name="date" required>
                 </div>
                 <div class="form-group">
                     <label for="pressure-time">Время</label>
-                    <input type="time" id="pressure-time" required>
+                    <input type="time" id="pressure-time" name="time" required>
                 </div>
                 <div class="form-group">
                     <label for="pressure-comment">Комментарий</label>
-                    <textarea id="pressure-comment" rows="3" placeholder="Проснулся, поел, прогулялся..."></textarea>
+                    <textarea id="pressure-comment" name="comment" rows="3" placeholder="Проснулся, поел, прогулялся..."></textarea>
                 </div>
                 <button type="submit">Сохранить измерение</button>
             </form>
@@ -717,16 +717,16 @@
             <form id="glucose-form">
                 <div class="form-group">
                     <label for="glucose-value">Уровень глюкозы (ммоль/л)</label>
-                    <input type="text" id="glucose-value" pattern="[0-9]+([\.,][0-9]+)?" required title="Введите число, например: 5.6 или 5,6" placeholder="5.6 или 5,6">
+                    <input type="text" id="glucose-value" name="value" pattern="[0-9]+([\.,][0-9]+)?" required title="Введите число, например: 5.6 или 5,6" placeholder="5.6 или 5,6">
                     <small style="color: #7f8c8d; font-size: 12px;">Можно вводить как через точку, так и через запятую</small>
                 </div>
                 <div class="form-group">
                     <label for="glucose-date">Дата</label>
-                    <input type="date" id="glucose-date" required>
+                    <input type="date" id="glucose-date" name="date" required>
                 </div>
                 <div class="form-group">
                     <label for="glucose-time">Время</label>
-                    <input type="time" id="glucose-time" required>
+                    <input type="time" id="glucose-time" name="time" required>
                 </div>
                 <div class="form-group">
                     <label>Состояние приема пищи</label>
@@ -747,7 +747,7 @@
                 </div>
                 <div class="form-group">
                     <label for="glucose-comment">Комментарий</label>
-                    <textarea id="glucose-comment" rows="3" placeholder="До еды, после еды..."></textarea>
+                    <textarea id="glucose-comment" name="comment" rows="3" placeholder="До еды, после еды..."></textarea>
                 </div>
                 <button type="submit">Сохранить измерение</button>
             </form>
@@ -814,27 +814,27 @@
             <form id="combined-form">
                 <div class="form-group">
                     <label for="combined-date">Дата</label>
-                    <input type="date" id="combined-date" required>
+                    <input type="date" id="combined-date" name="date" required>
                 </div>
                 <div class="form-group">
                     <label for="combined-time">Время</label>
-                    <input type="time" id="combined-time" required>
+                    <input type="time" id="combined-time" name="time" required>
                 </div>
                 <div class="form-group">
                     <label for="combined-systolic">Систолическое давление (верхнее)</label>
-                    <input type="number" id="combined-systolic" min="50" max="250" placeholder="Оставьте пустым, если нет данных">
+                    <input type="number" id="combined-systolic" name="systolic" min="50" max="250" placeholder="Оставьте пустым, если нет данных">
                 </div>
                 <div class="form-group">
                     <label for="combined-diastolic">Диастолическое давление (нижнее)</label>
-                    <input type="number" id="combined-diastolic" min="30" max="150" placeholder="Оставьте пустым, если нет данных">
+                    <input type="number" id="combined-diastolic" name="diastolic" min="30" max="150" placeholder="Оставьте пустым, если нет данных">
                 </div>
                 <div class="form-group">
                     <label for="combined-pulse">Пульс</label>
-                    <input type="number" id="combined-pulse" min="30" max="200" placeholder="Оставьте пустым, если нет данных">
+                    <input type="number" id="combined-pulse" name="pulse" min="30" max="200" placeholder="Оставьте пустым, если нет данных">
                 </div>
                 <div class="form-group">
                     <label for="combined-glucose">Уровень глюкозы (ммоль/л)</label>
-                    <input type="text" id="combined-glucose" pattern="[0-9]+([\.,][0-9]+)?" title="Введите число, например: 5.6 или 5,6" placeholder="5.6 или 5,6 (оставьте пустым, если нет данных)">
+                    <input type="text" id="combined-glucose" name="glucose" pattern="[0-9]+([\.,][0-9]+)?" title="Введите число, например: 5.6 или 5,6" placeholder="5.6 или 5,6 (оставьте пустым, если нет данных)">
                 </div>
                 <div class="form-group">
                     <label>Состояние приема пищи</label>
@@ -850,12 +850,12 @@
                                 <button type="button" class="meal-btn" data-meal-status="1hour">Ел в течение часа</button>
                             </div>
                         </div>
-                        <input type="hidden" id="combined-meal-status" name="combined-meal-status" value="none">
+                        <input type="hidden" id="combined-meal-status" name="meal-status" value="none">
                     </div>
                 </div>
                 <div class="form-group">
                     <label for="combined-comment">Комментарий</label>
-                    <textarea id="combined-comment" rows="3" placeholder="Комментарий к измерению..."></textarea>
+                    <textarea id="combined-comment" name="comment" rows="3" placeholder="Комментарий к измерению..."></textarea>
                 </div>
                 <button type="submit">Сохранить измерение</button>
             </form>
@@ -1062,6 +1062,12 @@
 
             // Работа с данными давления
             addPressureRecord(record) {
+                // Проверяем, что все числовые значения валидны
+                if (isNaN(record.systolic) || isNaN(record.diastolic) || isNaN(record.pulse)) {
+                    alert('Пожалуйста, проверьте корректность введенных данных');
+                    return;
+                }
+                
                 record.id = Date.now().toString();
                 record.timestamp = new Date(`${record.date}T${record.time}`).getTime();
                 this.pressureRecords.push(record);
@@ -1087,6 +1093,12 @@
 
             // Работа с данными глюкозы
             addGlucoseRecord(record) {
+                // Проверяем, что значение глюкозы валидно
+                if (isNaN(record.value)) {
+                    alert('Пожалуйста, проверьте корректность введенных данных глюкозы');
+                    return;
+                }
+                
                 record.id = Date.now().toString();
                 record.timestamp = new Date(`${record.date}T${record.time}`).getTime();
                 this.glucoseRecords.push(record);
@@ -1311,8 +1323,7 @@
                             ${record.comment ? `<div class="record-comment"><strong>Комментарий:</strong> ${record.comment}</div>` : ''}
                         </div>
                         <div class="record-actions">
-                            <button class="edit-btn" data-id="${record.id}">Редактировать</button>
-                            <button class="delete-btn" data-id="${record.id}">Удалить</button>
+                            <button class="delete-btn" data-id="${record.id}" data-type="pressure">Удалить</button>
                         </div>
                     </div>
                 `).join('');
@@ -1344,8 +1355,7 @@
                             ${record.comment ? `<div class="record-comment"><strong>Комментарий:</strong> ${record.comment}</div>` : ''}
                         </div>
                         <div class="record-actions">
-                            <button class="edit-btn" data-id="${record.id}">Редактировать</button>
-                            <button class="delete-btn" data-id="${record.id}">Удалить</button>
+                            <button class="delete-btn" data-id="${record.id}" data-type="glucose">Удалить</button>
                         </div>
                     </div>
                 `).join('');
@@ -1562,14 +1572,16 @@
                 document.getElementById('pressure-form').addEventListener('submit', (e) => {
                     e.preventDefault();
                     const formData = new FormData(e.target);
+                    
                     this.addPressureRecord({
                         systolic: parseInt(formData.get('systolic')),
                         diastolic: parseInt(formData.get('diastolic')),
                         pulse: parseInt(formData.get('pulse')),
-                        date: document.getElementById('pressure-date').value,
-                        time: document.getElementById('pressure-time').value,
-                        comment: document.getElementById('pressure-comment').value
+                        date: formData.get('date'),
+                        time: formData.get('time'),
+                        comment: formData.get('comment')
                     });
+                    
                     e.target.reset();
                     this.setDefaultDateTime();
                 });
@@ -1577,16 +1589,73 @@
                 // Форма глюкозы
                 document.getElementById('glucose-form').addEventListener('submit', (e) => {
                     e.preventDefault();
-                    let value = document.getElementById('glucose-value').value.replace(',', '.');
+                    const formData = new FormData(e.target);
+                    let value = formData.get('value').replace(',', '.');
+                    
                     this.addGlucoseRecord({
                         value: parseFloat(value),
-                        date: document.getElementById('glucose-date').value,
-                        time: document.getElementById('glucose-time').value,
-                        mealStatus: document.getElementById('meal-status').value,
-                        comment: document.getElementById('glucose-comment').value
+                        date: formData.get('date'),
+                        time: formData.get('time'),
+                        mealStatus: formData.get('meal-status'),
+                        comment: formData.get('comment')
                     });
+                    
                     e.target.reset();
                     this.setDefaultDateTime();
+                    // Сброс кнопок приема пищи
+                    document.querySelectorAll('#glucose-form .meal-btn').forEach(btn => {
+                        btn.classList.remove('active');
+                        if (btn.dataset.mealStatus === 'none') {
+                            btn.classList.add('active');
+                        }
+                    });
+                    document.getElementById('meal-status').value = 'none';
+                });
+
+                // Форма объединенных данных
+                document.getElementById('combined-form').addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    const formData = new FormData(e.target);
+                    
+                    // Обработка давления
+                    const systolic = formData.get('systolic');
+                    const diastolic = formData.get('diastolic');
+                    const pulse = formData.get('pulse');
+                    
+                    if (systolic && diastolic && pulse) {
+                        this.addPressureRecord({
+                            systolic: parseInt(systolic),
+                            diastolic: parseInt(diastolic),
+                            pulse: parseInt(pulse),
+                            date: formData.get('date'),
+                            time: formData.get('time'),
+                            comment: formData.get('comment')
+                        });
+                    }
+                    
+                    // Обработка глюкозы
+                    const glucoseValue = formData.get('glucose');
+                    if (glucoseValue) {
+                        let value = glucoseValue.replace(',', '.');
+                        this.addGlucoseRecord({
+                            value: parseFloat(value),
+                            date: formData.get('date'),
+                            time: formData.get('time'),
+                            mealStatus: formData.get('meal-status'),
+                            comment: formData.get('comment')
+                        });
+                    }
+                    
+                    e.target.reset();
+                    this.setDefaultDateTime();
+                    // Сброс кнопок приема пищи
+                    document.querySelectorAll('#combined-form .meal-btn').forEach(btn => {
+                        btn.classList.remove('active');
+                        if (btn.dataset.mealStatus === 'none') {
+                            btn.classList.add('active');
+                        }
+                    });
+                    document.getElementById('combined-meal-status').value = 'none';
                 });
 
                 // Кнопки приема пищи
@@ -1607,7 +1676,7 @@
                         if (confirm('Вы уверены, что хотите удалить эту запись?')) {
                             if (type === 'pressure') {
                                 this.deletePressureRecord(id);
-                            } else {
+                            } else if (type === 'glucose') {
                                 this.deleteGlucoseRecord(id);
                             }
                         }
@@ -1628,6 +1697,11 @@
                     btn.addEventListener('click', function() {
                         this.closest('.modal').style.display = 'none';
                     });
+                });
+
+                // Импорт данных
+                document.getElementById('confirm-import').addEventListener('click', () => {
+                    this.importData();
                 });
             }
 
@@ -1650,6 +1724,46 @@
                 link.click();
                 document.body.removeChild(link);
                 URL.revokeObjectURL(url);
+            }
+
+            // Импорт данных
+            importData() {
+                const fileInput = document.getElementById('import-file');
+                const importType = document.querySelector('input[name="import-type"]:checked').value;
+                
+                if (!fileInput.files.length) {
+                    alert('Пожалуйста, выберите файл для импорта');
+                    return;
+                }
+                
+                const file = fileInput.files[0];
+                const reader = new FileReader();
+                
+                reader.onload = (e) => {
+                    try {
+                        const data = JSON.parse(e.target.result);
+                        
+                        if (importType === 'replace') {
+                            this.pressureRecords = data.pressureRecords || [];
+                            this.glucoseRecords = data.glucoseRecords || [];
+                        } else if (importType === 'merge') {
+                            this.pressureRecords = [...this.pressureRecords, ...(data.pressureRecords || [])];
+                            this.glucoseRecords = [...this.glucoseRecords, ...(data.glucoseRecords || [])];
+                        }
+                        
+                        this.savePressureRecords();
+                        this.saveGlucoseRecords();
+                        this.updateAllDisplays();
+                        
+                        document.getElementById('import-modal').style.display = 'none';
+                        fileInput.value = '';
+                        alert('Данные успешно импортированы!');
+                    } catch (error) {
+                        alert('Ошибка при чтении файла: ' + error.message);
+                    }
+                };
+                
+                reader.readAsText(file);
             }
         }
 
